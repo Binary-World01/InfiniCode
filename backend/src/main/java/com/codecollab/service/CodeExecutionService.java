@@ -59,16 +59,14 @@ public class CodeExecutionService {
 
         try {
             String language = request.getLanguage().toLowerCase();
-            String code = request.getCode();
-            String stdin = request.getInput();
 
             ExecuteResult result = switch (language) {
-                case "python" -> runWithProcess(code, "python3", ".py", stdin, sessionId);
-                case "javascript", "js" -> runWithProcess(code, "node", ".js", stdin, sessionId);
-                case "java" -> runJava(code, stdin, sessionId);
-                case "cpp", "c++" -> runCpp(code, stdin, sessionId);
-                case "go" -> runWithProcess(code, "go run", ".go", stdin, sessionId);
-                case "bash", "shell" -> runBash(code, stdin, sessionId);
+                case "python" -> runWithProcess(request, "python3", ".py", sessionId);
+                case "javascript", "js" -> runWithProcess(request, "node", ".js", sessionId);
+                case "java" -> runJava(request, sessionId);
+                case "cpp", "c++" -> runCpp(request, sessionId);
+                case "go" -> runGo(request, sessionId);
+                case "bash", "shell" -> runBash(request, sessionId);
                 default -> new ExecuteResult("Language '" + language + "' not supported.", "", false, 0);
             };
 
@@ -87,84 +85,131 @@ public class CodeExecutionService {
         }
     }
 
-    private ExecuteResult runWithProcess(String code, String runner, String ext, String stdin, String sessionId)
-            throws Exception {
+    private String getMainFilePath(ExecuteRequest request, String defaultExt) {
+        String path = request.getMainFile();
+        if (path == null || path.isEmpty()) return "Main" + defaultExt;
+        if (path.startsWith("/")) path = path.substring(1);
+        return path;
+    }
+
+    private void writeFilesToTempDir(ExecuteRequest request, File tmpDir) throws Exception {
+        if (request.getFiles() != null && !request.getFiles().isEmpty()) {
+            for (ExecuteRequest.FileNode fn : request.getFiles()) {
+                String path = fn.getPath();
+                if (path == null || path.isEmpty()) continue;
+                if (path.startsWith("/")) path = path.substring(1);
+                File f = new File(tmpDir, path);
+                f.getParentFile().mkdirs();
+                try (FileWriter fw = new FileWriter(f)) {
+                    fw.write(fn.getContent() != null ? fn.getContent() : "");
+                }
+            }
+        } else if (request.getCode() != null) {
+            String ext = EXTENSIONS.getOrDefault(request.getLanguage().toLowerCase(), "txt");
+            String mainPath = getMainFilePath(request, "." + ext);
+            File codeFile = new File(tmpDir, mainPath);
+            codeFile.getParentFile().mkdirs();
+            try (FileWriter fw = new FileWriter(codeFile)) {
+                fw.write(request.getCode());
+            }
+        }
+    }
+
+    private void findFilesWithExtension(File dir, String ext, List<String> result) {
+        File[] files = dir.listFiles();
+        if (files == null) return;
+        for (File f : files) {
+            if (f.isDirectory()) {
+                findFilesWithExtension(f, ext, result);
+            } else if (f.getName().endsWith(ext)) {
+                result.add(f.getAbsolutePath());
+            }
+        }
+    }
+
+    private ExecuteResult runWithProcess(ExecuteRequest request, String runner, String ext, String sessionId) throws Exception {
         File tmpDir = new File(System.getProperty("java.io.tmpdir"), "codecollab_" + System.currentTimeMillis());
         tmpDir.mkdirs();
+        writeFilesToTempDir(request, tmpDir);
 
-        File codeFile = new File(tmpDir, "Main" + ext);
-        try (FileWriter fw = new FileWriter(codeFile)) {
-            fw.write(code);
-        }
-
-        String[] cmd;
-        if (runner.equals("go run")) {
-            cmd = new String[] { "go", "run", codeFile.getAbsolutePath() };
-        } else {
-            cmd = new String[] { runner, codeFile.getAbsolutePath() };
-        }
-
-        return runProcess(cmd, stdin, tmpDir, 30);
+        String mainFile = getMainFilePath(request, ext);
+        String[] cmd = new String[] { runner, mainFile };
+        return runProcess(cmd, request.getInput(), tmpDir, 30);
     }
 
-    private ExecuteResult runJava(String code, String stdin, String sessionId) throws Exception {
-        // Extract class name
-        String className = "Main";
-        java.util.regex.Matcher m = java.util.regex.Pattern.compile("public\\s+class\\s+(\\w+)").matcher(code);
-        if (m.find())
-            className = m.group(1);
+    private ExecuteResult runGo(ExecuteRequest request, String sessionId) throws Exception {
+        File tmpDir = new File(System.getProperty("java.io.tmpdir"), "codecollab_go_" + System.currentTimeMillis());
+        tmpDir.mkdirs();
+        writeFilesToTempDir(request, tmpDir);
+        String mainFile = getMainFilePath(request, ".go");
+        return runProcess(new String[] { "go", "run", mainFile }, request.getInput(), tmpDir, 30);
+    }
 
+    private ExecuteResult runJava(ExecuteRequest request, String sessionId) throws Exception {
         File tmpDir = new File(System.getProperty("java.io.tmpdir"), "codecollab_java_" + System.currentTimeMillis());
         tmpDir.mkdirs();
+        writeFilesToTempDir(request, tmpDir);
 
-        File srcFile = new File(tmpDir, className + ".java");
-        try (FileWriter fw = new FileWriter(srcFile)) {
-            fw.write(code);
+        String mainFile = getMainFilePath(request, ".java");
+        List<String> javaFiles = new ArrayList<>();
+        findFilesWithExtension(tmpDir, ".java", javaFiles);
+
+        if (javaFiles.isEmpty()) {
+            return new ExecuteResult("", "No Java files found.", false, 0);
         }
 
-        // Compile
-        ExecuteResult compileResult = runProcess(
-                new String[] { "javac", srcFile.getAbsolutePath() }, "", tmpDir, 30);
+        List<String> compileCmd = new ArrayList<>();
+        compileCmd.add("javac");
+        compileCmd.addAll(javaFiles);
+        ExecuteResult compileResult = runProcess(compileCmd.toArray(new String[0]), "", tmpDir, 30);
         if (!compileResult.isSuccess()) {
             compileResult.setStderr("[Compilation Error]\n" + compileResult.getStderr());
             return compileResult;
         }
 
-        // Run
-        return runProcess(new String[] { "java", "-cp", tmpDir.getAbsolutePath(), className }, stdin, tmpDir, 30);
+        String className = mainFile.replace("/", ".").replace(".java", "");
+        return runProcess(new String[] { "java", "-cp", tmpDir.getAbsolutePath(), className }, request.getInput(), tmpDir, 30);
     }
 
-    private ExecuteResult runCpp(String code, String stdin, String sessionId) throws Exception {
+    private ExecuteResult runCpp(ExecuteRequest request, String sessionId) throws Exception {
         File tmpDir = new File(System.getProperty("java.io.tmpdir"), "codecollab_cpp_" + System.currentTimeMillis());
         tmpDir.mkdirs();
+        writeFilesToTempDir(request, tmpDir);
 
-        File srcFile = new File(tmpDir, "main.cpp");
-        File outFile = new File(tmpDir, "main");
-        try (FileWriter fw = new FileWriter(srcFile)) {
-            fw.write(code);
+        List<String> cppFiles = new ArrayList<>();
+        findFilesWithExtension(tmpDir, ".cpp", cppFiles);
+        
+        if (cppFiles.isEmpty()) {
+            return new ExecuteResult("", "No C++ files found to compile.", false, 0);
         }
 
-        // Compile
-        ExecuteResult compileResult = runProcess(
-                new String[] { "g++", "-o", outFile.getAbsolutePath(), srcFile.getAbsolutePath() },
-                "", tmpDir, 30);
+        File outFile = new File(tmpDir, "main_exec");
+
+        List<String> compileCmd = new ArrayList<>();
+        compileCmd.add("g++");
+        compileCmd.add("-o");
+        compileCmd.add(outFile.getAbsolutePath());
+        compileCmd.addAll(cppFiles);
+
+        ExecuteResult compileResult = runProcess(compileCmd.toArray(new String[0]), "", tmpDir, 30);
         if (!compileResult.isSuccess()) {
             compileResult.setStderr("[Compilation Error]\n" + compileResult.getStderr());
             return compileResult;
         }
 
-        return runProcess(new String[] { outFile.getAbsolutePath() }, stdin, tmpDir, 30);
+        return runProcess(new String[] { outFile.getAbsolutePath() }, request.getInput(), tmpDir, 30);
     }
 
-    private ExecuteResult runBash(String code, String stdin, String sessionId) throws Exception {
+    private ExecuteResult runBash(ExecuteRequest request, String sessionId) throws Exception {
         File tmpDir = new File(System.getProperty("java.io.tmpdir"), "codecollab_bash_" + System.currentTimeMillis());
         tmpDir.mkdirs();
-        File scriptFile = new File(tmpDir, "script.sh");
-        try (FileWriter fw = new FileWriter(scriptFile)) {
-            fw.write(code);
-        }
+        writeFilesToTempDir(request, tmpDir);
+
+        String mainFile = getMainFilePath(request, ".sh");
+        File scriptFile = new File(tmpDir, mainFile);
         scriptFile.setExecutable(true);
-        return runProcess(new String[] { "bash", scriptFile.getAbsolutePath() }, stdin, tmpDir, 15);
+
+        return runProcess(new String[] { "bash", mainFile }, request.getInput(), tmpDir, 15);
     }
 
     private ExecuteResult runProcess(String[] cmd, String stdin, File workDir, int timeoutSeconds) throws Exception {

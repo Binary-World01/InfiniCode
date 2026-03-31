@@ -95,11 +95,13 @@ Loader.displayName = "Loader";
 interface LoadingBreadcrumbProps {
     text?: string;
     className?: string;
+    onClick?: () => void;
 }
 
 export function LoadingBreadcrumb({
     text = "Cooking",
-    className
+    className,
+    onClick
 }: LoadingBreadcrumbProps) {
     return (
         <>
@@ -130,10 +132,13 @@ export function LoadingBreadcrumb({
         }
       `}</style>
 
-            <div className={cn(
-                "flex items-center gap-2 text-[15px] font-medium tracking-wide",
-                className
-            )}>
+            <div 
+                onClick={onClick}
+                className={cn(
+                    "flex items-center gap-2 text-[15px] font-medium tracking-wide",
+                    className
+                )}
+            >
                 <Loader
                     size={18}
                     strokeWidth={2.5}

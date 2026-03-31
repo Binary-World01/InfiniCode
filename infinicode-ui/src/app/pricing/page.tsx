@@ -6,18 +6,7 @@ import Link from "next/link";
 import { AuthGuard } from "@/components/auth-guard";
 import { useAuth } from "@/context/AuthContext";
 
-function InfinityLogo({ size = 32 }: { size?: number }) {
-    return (
-        <svg width={size} height={size} viewBox="-1 -3.5 13 13" fill="#ffffff" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="1" cy="0" r="0.45" /><circle cx="2" cy="0" r="0.45" /><circle cx="6" cy="0" r="0.45" /><circle cx="7" cy="0" r="0.45" /><circle cx="8" cy="0" r="0.45" /><circle cx="9" cy="0" r="0.45" />
-            <circle cx="0" cy="1" r="0.45" /><circle cx="1" cy="1" r="0.45" /><circle cx="2" cy="1" r="0.45" /><circle cx="3" cy="1" r="0.45" /><circle cx="4" cy="1" r="0.45" /><circle cx="5" cy="1" r="0.45" /><circle cx="6" cy="1" r="0.45" /><circle cx="10" cy="1" r="0.45" />
-            <circle cx="0" cy="2" r="0.45" /><circle cx="4" cy="2" r="0.45" /><circle cx="5" cy="2" r="0.45" /><circle cx="10" cy="2" r="0.45" /><circle cx="11" cy="2" r="0.45" />
-            <circle cx="0" cy="3" r="0.45" /><circle cx="4" cy="3" r="0.45" /><circle cx="5" cy="3" r="0.45" /><circle cx="10" cy="3" r="0.45" /><circle cx="11" cy="3" r="0.45" />
-            <circle cx="0" cy="4" r="0.45" /><circle cx="1" cy="4" r="0.45" /><circle cx="3" cy="4" r="0.45" /><circle cx="4" cy="4" r="0.45" /><circle cx="5" cy="4" r="0.45" /><circle cx="6" cy="4" r="0.45" /><circle cx="10" cy="4" r="0.45" />
-            <circle cx="1" cy="5" r="0.45" /><circle cx="2" cy="5" r="0.45" /><circle cx="3" cy="5" r="0.45" /><circle cx="6" cy="5" r="0.45" /><circle cx="7" cy="5" r="0.45" /><circle cx="8" cy="5" r="0.45" /><circle cx="9" cy="5" r="0.45" />
-        </svg>
-    );
-}
+import { InfinityLogo } from "@/components/ui/logo";
 
 const plans = [
     { name: "Starter", price: "Free", desc: "For solo developers", color: "from-blue-500 to-cyan-500", features: ["Monaco code editor", "3 AI completions/day", "Community support", "2 projects"] },

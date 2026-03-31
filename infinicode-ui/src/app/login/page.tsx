@@ -2,31 +2,55 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
+import { supabase } from "@/lib/supabase";
 import { motion } from "framer-motion";
 import { ArrowRight, Github, Mail, Lock } from "lucide-react";
 
-function InfinityLogo({ size = 32 }: { size?: number }) {
-    return (
-        <svg width={size} height={size} viewBox="-1 -4 13 13" fill="#ffffff" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="1" cy="0" r="0.45" /><circle cx="2" cy="0" r="0.45" /><circle cx="6" cy="0" r="0.45" /><circle cx="7" cy="0" r="0.45" /><circle cx="8" cy="0" r="0.45" /><circle cx="9" cy="0" r="0.45" />
-            <circle cx="0" cy="1" r="0.45" /><circle cx="1" cy="1" r="0.45" /><circle cx="2" cy="1" r="0.45" /><circle cx="3" cy="1" r="0.45" /><circle cx="4" cy="1" r="0.45" /><circle cx="5" cy="1" r="0.45" /><circle cx="6" cy="1" r="0.45" /><circle cx="10" cy="1" r="0.45" />
-            <circle cx="0" cy="2" r="0.45" /><circle cx="4" cy="2" r="0.45" /><circle cx="5" cy="2" r="0.45" /><circle cx="10" cy="2" r="0.45" /><circle cx="11" cy="2" r="0.45" />
-            <circle cx="0" cy="3" r="0.45" /><circle cx="4" cy="3" r="0.45" /><circle cx="5" cy="3" r="0.45" /><circle cx="10" cy="3" r="0.45" /><circle cx="11" cy="3" r="0.45" />
-            <circle cx="0" cy="4" r="0.45" /><circle cx="1" cy="4" r="0.45" /><circle cx="3" cy="4" r="0.45" /><circle cx="4" cy="4" r="0.45" /><circle cx="5" cy="4" r="0.45" /><circle cx="6" cy="4" r="0.45" /><circle cx="10" cy="4" r="0.45" />
-            <circle cx="1" cy="5" r="0.45" /><circle cx="2" cy="5" r="0.45" /><circle cx="3" cy="5" r="0.45" /><circle cx="6" cy="5" r="0.45" /><circle cx="7" cy="5" r="0.45" /><circle cx="8" cy="5" r="0.45" /><circle cx="9" cy="5" r="0.45" />
-        </svg>
-    );
-}
+import { InfinityLogo } from "@/components/ui/logo";
 
 export default function LoginPage() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
-    const { login } = useAuth();
+    const [error, setError] = useState<string | null>(null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const router = useRouter();
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        login({ email, name: email.split("@")[0] });
+        setError(null);
+        setIsSubmitting(true);
+
+        // Pre-clear any corrupted session
+        await supabase.auth.signOut();
+        localStorage.removeItem('user');
+        Object.keys(localStorage).forEach(key => {
+            if (key.includes('auth-token')) localStorage.removeItem(key);
+        });
+
+        try {
+            const { error: authError } = await supabase.auth.signInWithPassword({
+                email,
+                password,
+            });
+
+            if (authError) throw authError;
+            router.push("/dashboard");
+        } catch (err: any) {
+            setError(err.message || "An error occurred during login");
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const handleGithubLogin = async () => {
+        await supabase.auth.signInWithOAuth({
+            provider: 'github',
+            options: {
+                redirectTo: `${window.location.origin}/dashboard`
+            }
+        });
     };
 
     return (
@@ -43,6 +67,12 @@ export default function LoginPage() {
                     <h1 className="text-3xl font-bold mt-6 tracking-tight">Sign In</h1>
                     <p className="text-gray-500 text-sm mt-2">Welcome back to the infinite canvas.</p>
                 </div>
+
+                {error && (
+                    <div className="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+                        {error}
+                    </div>
+                )}
 
                 <form onSubmit={handleSubmit} className="space-y-5">
                     <div className="space-y-2">
@@ -80,9 +110,10 @@ export default function LoginPage() {
 
                     <button
                         type="submit"
-                        className="w-full bg-white text-black font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 hover:bg-gray-200 transition-all active:scale-[0.98] mt-4"
+                        disabled={isSubmitting}
+                        className="w-full bg-white text-black font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 hover:bg-gray-200 transition-all active:scale-[0.98] mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        Login to InfiniCode <ArrowRight className="w-4 h-4" />
+                        {isSubmitting ? "Authenticating..." : "Login to InfiniCode"} <ArrowRight className="w-4 h-4" />
                     </button>
                 </form>
 
@@ -92,7 +123,7 @@ export default function LoginPage() {
                         <div className="relative flex justify-center text-[10px] uppercase font-bold text-gray-600 tracking-[0.3em]"><span className="bg-[#0a0a0a] px-3">Sync Session</span></div>
                     </div>
 
-                    <button className="w-full bg-white/5 border border-white/10 text-white font-semibold py-3 rounded-xl flex items-center justify-center gap-2 hover:bg-white/10 transition-all active:scale-[0.98]">
+                    <button onClick={handleGithubLogin} className="w-full bg-white/5 border border-white/10 text-white font-semibold py-3 rounded-xl flex items-center justify-center gap-2 hover:bg-white/10 transition-all active:scale-[0.98]">
                         <Github className="w-5 h-5" /> Continue with GitHub
                     </button>
                 </div>

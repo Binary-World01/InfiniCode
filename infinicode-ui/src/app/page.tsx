@@ -18,18 +18,7 @@ const features = [
   { area: "md:[grid-area:3/1/4/13] xl:[grid-area:2/8/3/13]", icon: <Cpu className="h-4 w-4" />, title: "Infinite ∞ Canvas", description: "InfiniCode adapts to you. Drag, resize, and organize your workspace exactly how you think." },
 ];
 
-function InfinityLogo({ size = 32 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="-1 -4 13 13" fill="#ffffff" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="1" cy="0" r="0.45" /><circle cx="2" cy="0" r="0.45" /><circle cx="6" cy="0" r="0.45" /><circle cx="7" cy="0" r="0.45" /><circle cx="8" cy="0" r="0.45" /><circle cx="9" cy="0" r="0.45" />
-      <circle cx="0" cy="1" r="0.45" /><circle cx="1" cy="1" r="0.45" /><circle cx="2" cy="1" r="0.45" /><circle cx="3" cy="1" r="0.45" /><circle cx="4" cy="1" r="0.45" /><circle cx="5" cy="1" r="0.45" /><circle cx="6" cy="1" r="0.45" /><circle cx="10" cy="1" r="0.45" />
-      <circle cx="0" cy="2" r="0.45" /><circle cx="4" cy="2" r="0.45" /><circle cx="5" cy="2" r="0.45" /><circle cx="10" cy="2" r="0.45" /><circle cx="11" cy="2" r="0.45" />
-      <circle cx="0" cy="3" r="0.45" /><circle cx="4" cy="3" r="0.45" /><circle cx="5" cy="3" r="0.45" /><circle cx="10" cy="3" r="0.45" /><circle cx="11" cy="3" r="0.45" />
-      <circle cx="0" cy="4" r="0.45" /><circle cx="1" cy="4" r="0.45" /><circle cx="3" cy="4" r="0.45" /><circle cx="4" cy="4" r="0.45" /><circle cx="5" cy="4" r="0.45" /><circle cx="6" cy="4" r="0.45" /><circle cx="10" cy="4" r="0.45" />
-      <circle cx="1" cy="5" r="0.45" /><circle cx="2" cy="5" r="0.45" /><circle cx="3" cy="5" r="0.45" /><circle cx="6" cy="5" r="0.45" /><circle cx="7" cy="5" r="0.45" /><circle cx="8" cy="5" r="0.45" /><circle cx="9" cy="5" r="0.45" />
-    </svg>
-  );
-}
+import { InfinityLogo } from "@/components/ui/logo";
 
 export default function Home() {
   const { isAuthenticated, user, logout } = useAuth();
@@ -100,7 +89,7 @@ export default function Home() {
           <LoadingBreadcrumb text="InfiniCode AI thinking" />
         </div>
         <div className="w-full bg-black" style={{ height: 280 }}>
-          <CursorDrivenParticleTypography text="∞ InfiniCode" fontSize={90} particleDensity={5} dispersionStrength={22} color="#ffffff" />
+          <CursorDrivenParticleTypography text="InfiniCode" showBrandLogo={true} fontSize={90} particleDensity={5} dispersionStrength={22} color="#ffffff" />
         </div>
       </section>
 

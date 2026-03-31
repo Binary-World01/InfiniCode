@@ -23,6 +23,12 @@ public class SecurityConfig {
     @Value("${cors.allowed-origins}")
     private String allowedOrigins;
 
+    private final JwtAuthenticationFilter jwtAuthFilter;
+
+    public SecurityConfig(JwtAuthenticationFilter jwtAuthFilter) {
+        this.jwtAuthFilter = jwtAuthFilter;
+    }
+
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
@@ -32,14 +38,17 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // Public endpoints
                         .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers("/api/ai/**").permitAll() // AI route open for demo
-                        .requestMatchers("/api/execute/**").permitAll() // Execution open for demo
                         .requestMatchers("/api/public/**").permitAll()
                         .requestMatchers("/h2-console/**").permitAll()
-                        .requestMatchers("/ws/**").permitAll()
                         .requestMatchers("/actuator/health").permitAll()
-                        .anyRequest().permitAll() // Open all for MVP demo — add JWT filter for production
+                        .requestMatchers("/ws/**").permitAll()
+                        // Secured endpoints
+                        .requestMatchers("/api/ai/**").authenticated()
+                        .requestMatchers("/api/execute/**").authenticated()
+                        .requestMatchers("/api/projects/**").authenticated()
+                        .anyRequest().authenticated()
                 )
+                .addFilterBefore(jwtAuthFilter, org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter.class)
                 .headers(headers -> headers.frameOptions(fo -> fo.disable())); // For H2 console
 
         return http.build();

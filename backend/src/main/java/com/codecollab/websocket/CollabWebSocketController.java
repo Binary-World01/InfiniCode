@@ -72,9 +72,10 @@ public class CollabWebSocketController {
     @MessageMapping("/collab/{roomCode}/join")
     public void handleJoin(
             @DestinationVariable String roomCode,
-            @Payload Map<String, Object> userData) {
+            @Payload Map<String, Object> userData,
+            java.security.Principal principal) {
 
-        String userId = (String) userData.get("userId");
+        String userId = (principal != null) ? principal.getName() : (String) userData.get("userId");
         activeRooms.computeIfAbsent(roomCode, k -> ConcurrentHashMap.newKeySet()).add(userId);
 
         Map<String, Object> notification = Map.of(
@@ -94,9 +95,10 @@ public class CollabWebSocketController {
     @MessageMapping("/collab/{roomCode}/leave")
     public void handleLeave(
             @DestinationVariable String roomCode,
-            @Payload Map<String, Object> userData) {
+            @Payload Map<String, Object> userData,
+            java.security.Principal principal) {
 
-        String userId = (String) userData.get("userId");
+        String userId = (principal != null) ? principal.getName() : (String) userData.get("userId");
         Set<String> room = activeRooms.get(roomCode);
         if (room != null)
             room.remove(userId);

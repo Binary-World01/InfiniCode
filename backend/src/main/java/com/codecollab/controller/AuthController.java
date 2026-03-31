@@ -21,7 +21,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*")
 public class AuthController {
 
     private final UserRepository userRepository;
@@ -113,19 +112,13 @@ public class AuthController {
      * Validate token and return user info.
      */
     @GetMapping("/me")
-    public ResponseEntity<?> getMe(
-            @RequestHeader(value = "Authorization", required = false) String authHeader) {
-
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "No token"));
-        }
-        String token = authHeader.substring(7);
-        if (!jwtService.isTokenValid(token)) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "Invalid or expired token"));
+    public ResponseEntity<?> getMe() {
+        Long userId = getCurrentUserId();
+        if (userId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "Unauthorized"));
         }
 
-        String email = jwtService.extractEmail(token);
-        return userRepository.findByEmail(email)
+        return userRepository.findById(userId)
                 .map(user -> ResponseEntity.ok(Map.of(
                         "id", user.getId(),
                         "username", user.getUsername(),
@@ -142,16 +135,12 @@ public class AuthController {
      */
     @PutMapping("/keys")
     public ResponseEntity<?> updateApiKeys(
-            @RequestBody Map<String, String> keys,
-            @RequestHeader("Authorization") String authHeader) {
+            @RequestBody Map<String, String> keys) {
 
-        if (!authHeader.startsWith("Bearer "))
+        Long userId = getCurrentUserId();
+        if (userId == null)
             return ResponseEntity.status(401).body(Map.of("error", "Unauthorized"));
-        String token = authHeader.substring(7);
-        if (!jwtService.isTokenValid(token))
-            return ResponseEntity.status(401).body(Map.of("error", "Invalid token"));
 
-        Long userId = jwtService.extractUserId(token);
         return userRepository.findById(userId).map(user -> {
             if (keys.containsKey("geminiKey"))
                 user.setGeminiApiKey(keys.get("geminiKey"));
@@ -162,6 +151,14 @@ public class AuthController {
             userRepository.save(user);
             return ResponseEntity.ok(Map.of("message", "API keys updated"));
         }).orElse(ResponseEntity.status(404).body(Map.of("error", "User not found")));
+    }
+
+    private Long getCurrentUserId() {
+        Object principal = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        if (principal instanceof String email) {
+            return userRepository.findByEmail(email).map(User::getId).orElse(null);
+        }
+        return null;
     }
 
     // XSS prevention — remove HTML tags from user input

@@ -39,7 +39,8 @@ public class GeminiService {
             throw new Exception("No valid Gemini API key configured");
         }
 
-        String url = baseUrl + "/models/" + model + ":generateContent?key=" + apiKey;
+        String finalBaseUrl = baseUrl.endsWith("/") ? baseUrl : baseUrl + "/";
+        String url = finalBaseUrl + "models/" + model + ":generateContent?key=" + apiKey;
 
         // Build Gemini request body
         Map<String, Object> requestBody = Map.of(

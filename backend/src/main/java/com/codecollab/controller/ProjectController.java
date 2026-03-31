@@ -18,7 +18,6 @@ import java.util.Random;
 @RestController
 @RequestMapping("/api/projects")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*")
 public class ProjectController {
 
     private final ProjectRepository projectRepository;
@@ -26,8 +25,8 @@ public class ProjectController {
     private final JwtService jwtService;
 
     @GetMapping
-    public ResponseEntity<?> getMyProjects(@RequestHeader("Authorization") String auth) {
-        Long userId = extractUserId(auth);
+    public ResponseEntity<?> getMyProjects() {
+        Long userId = getCurrentUserId();
         if (userId == null)
             return ResponseEntity.status(401).body(Map.of("error", "Unauthorized"));
         List<Project> projects = projectRepository.findByOwnerIdOrderByUpdatedAtDesc(userId);
@@ -36,12 +35,12 @@ public class ProjectController {
 
     @PostMapping
     public ResponseEntity<?> createProject(
-            @RequestBody Map<String, String> body,
-            @RequestHeader("Authorization") String auth) {
+            @RequestBody Map<String, String> body) {
 
-        Long userId = extractUserId(auth);
+        Long userId = getCurrentUserId();
         if (userId == null)
             return ResponseEntity.status(401).body(Map.of("error", "Unauthorized"));
+        
         User owner = userRepository.findById(userId).orElse(null);
         if (owner == null)
             return ResponseEntity.status(404).body(Map.of("error", "User not found"));
@@ -65,11 +64,10 @@ public class ProjectController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<?> getProject(@PathVariable Long id,
-            @RequestHeader(value = "Authorization", required = false) String auth) {
+    public ResponseEntity<?> getProject(@PathVariable Long id) {
         return projectRepository.findById(id).map(p -> {
             if (!p.isPublic()) {
-                Long userId = extractUserId(auth);
+                Long userId = getCurrentUserId();
                 if (userId == null || !p.getOwner().getId().equals(userId))
                     return ResponseEntity.status(403).body(Map.of("error", "Forbidden"));
             }
@@ -78,8 +76,8 @@ public class ProjectController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteProject(@PathVariable Long id, @RequestHeader("Authorization") String auth) {
-        Long userId = extractUserId(auth);
+    public ResponseEntity<?> deleteProject(@PathVariable Long id) {
+        Long userId = getCurrentUserId();
         if (userId == null)
             return ResponseEntity.status(401).body(Map.of("error", "Unauthorized"));
         return projectRepository.findById(id).map(p -> {
@@ -103,13 +101,12 @@ public class ProjectController {
         return ResponseEntity.ok(projectRepository.findByIsPublicTrueOrderByStarsDesc());
     }
 
-    private Long extractUserId(String authHeader) {
-        if (authHeader == null || !authHeader.startsWith("Bearer "))
-            return null;
-        String token = authHeader.substring(7);
-        if (!jwtService.isTokenValid(token))
-            return null;
-        return jwtService.extractUserId(token);
+    private Long getCurrentUserId() {
+        Object principal = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        if (principal instanceof String email) {
+            return userRepository.findByEmail(email).map(User::getId).orElse(null);
+        }
+        return null;
     }
 
     private String sanitize(String s) {

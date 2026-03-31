@@ -16,6 +16,7 @@ export interface CursorDrivenParticleTypographyProps {
     dispersionStrength?: number;
     returnSpeed?: number;
     color?: string;
+    showBrandLogo?: boolean;
 }
 
 class Particle {
@@ -100,6 +101,7 @@ export function CursorDrivenParticleTypography({
     dispersionStrength = 15,
     returnSpeed = 0.08,
     color,
+    showBrandLogo = false,
 }: CursorDrivenParticleTypographyProps) {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
@@ -144,13 +146,52 @@ export function CursorDrivenParticleTypography({
             ctx.font = `bold ${effectiveFontSize}px ${fontFamily}`;
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
-            ctx.fillText(text, containerWidth / 2, containerHeight / 2);
+
+            if (showBrandLogo) {
+                // Adjust logoSize to better match text height (cap-height)
+                const logoSize = effectiveFontSize * 0.95; 
+                const logoDots = [
+                    { cx: 1, cy: 0 }, { cx: 2, cy: 0 }, { cx: 6, cy: 0 }, { cx: 7, cy: 0 }, { cx: 8, cy: 0 }, { cx: 9, cy: 0 },
+                    { cx: 0, cy: 1 }, { cx: 1, cy: 1 }, { cx: 2, cy: 1 }, { cx: 3, cy: 1 }, { cx: 4, cy: 1 }, { cx: 5, cy: 1 }, { cx: 6, cy: 1 }, { cx: 10, cy: 1 },
+                    { cx: 0, cy: 2 }, { cx: 4, cy: 2 }, { cx: 5, cy: 2 }, { cx: 10, cy: 2 }, { cx: 11, cy: 2 },
+                    { cx: 0, cy: 3 }, { cx: 4, cy: 3 }, { cx: 5, cy: 3 }, { cx: 10, cy: 3 }, { cx: 11, cy: 3 },
+                    { cx: 0, cy: 4 }, { cx: 1, cy: 4 }, { cx: 3, cy: 4 }, { cx: 4, cy: 4 }, { cx: 5, cy: 4 }, { cx: 6, cy: 4 }, { cx: 10, cy: 4 },
+                    { cx: 1, cy: 5 }, { cx: 2, cy: 5 }, { cx: 3, cy: 5 }, { cx: 6, cy: 5 }, { cx: 7, cy: 5 }, { cx: 8, cy: 5 }, { cx: 9, cy: 5 }
+                ];
+                
+                const dotScale = logoSize / 12;
+                const textWidth = text ? ctx.measureText(text).width : 0;
+                const totalWidth = text ? (logoSize * 1.1) + textWidth : logoSize;
+                
+                // Offset of the entire logo+text block from canvas edge to center it
+                const blockOffsetX = (containerWidth - totalWidth) / 2;
+                const blockOffsetY = containerHeight / 2 - (5 * dotScale) / 2;
+
+                particles = []; // Clear particles before scanning
+
+                // 1. Draw the brand logo pattern on the canvas for the scanner to pick up
+                ctx.fillStyle = textColor;
+                logoDots.forEach(dot => {
+                    ctx.beginPath();
+                    // Draw a solid circle on the canvas - this will result in a "bold" cluster of particles
+                    ctx.arc(blockOffsetX + dot.cx * dotScale, blockOffsetY + dot.cy * dotScale, dotScale * 0.45, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+
+                // 2. Draw the text on the same canvas
+                if (text) {
+                    ctx.textAlign = "left";
+                    // Tighter spacing between logo and text
+                    ctx.fillText(text, blockOffsetX + logoSize * 1.1, containerHeight / 2);
+                }
+            } else {
+                particles = []; // Clear particles if not showing logo
+                ctx.fillText(text, containerWidth / 2, containerHeight / 2);
+            }
 
             const textCoordinates = ctx.getImageData(0, 0, canvas.width, canvas.height);
-            particles = [];
-
+            // Scan the canvas for text particles
             const step = Math.max(1, Math.floor(particleDensity * dpr));
-
             for (let y = 0; y < textCoordinates.height; y += step) {
                 for (let x = 0; x < textCoordinates.width; x += step) {
                     const index = (y * textCoordinates.width + x) * 4;
@@ -203,7 +244,7 @@ export function CursorDrivenParticleTypography({
             canvas.removeEventListener("mouseleave", handleMouseLeave);
             cancelAnimationFrame(animationFrameId);
         };
-    }, [text, fontSize, fontFamily, particleSize, particleDensity, dispersionStrength, returnSpeed, color]);
+    }, [text, fontSize, fontFamily, particleSize, particleDensity, dispersionStrength, returnSpeed, color, showBrandLogo]);
 
     return (
         <div

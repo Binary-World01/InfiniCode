@@ -8,4 +8,14 @@ public class ExecuteRequest {
     private String language; // java, python, javascript, cpp, go, rust
     private String input; // stdin for program
     private Long projectId;
+
+    // Multi-file execution support
+    private String mainFile;
+    private java.util.List<FileNode> files;
+
+    @Data
+    public static class FileNode {
+        private String path;
+        private String content;
+    }
 }

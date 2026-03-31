@@ -12,7 +12,6 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/execute")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*")
 public class ExecutionController {
 
     private final CodeExecutionService executionService;
@@ -26,10 +25,13 @@ public class ExecutionController {
             @RequestBody ExecuteRequest request,
             @RequestHeader(value = "X-Session-Id", defaultValue = "default") String sessionId) {
 
-        if (request.getCode() == null || request.getCode().isBlank()) {
+        boolean noCode = (request.getCode() == null || request.getCode().isBlank());
+        boolean noFiles = (request.getFiles() == null || request.getFiles().isEmpty());
+
+        if (noCode && noFiles) {
             return ResponseEntity.badRequest().body(Map.of(
                     "success", false,
-                    "stderr", "No code provided",
+                    "stderr", "No code or files provided",
                     "stdout", ""));
         }
 
