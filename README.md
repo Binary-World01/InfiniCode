@@ -72,6 +72,37 @@ User Request ➜ [1] Gemini 2.0 (Fastest)
 
 ---
 
+## 🔑 Required Configuration
+
+To run InfiniCode locally, you must set up the following environment variables.
+
+### 🌐 Frontend Configuration (`infinicode-ui/.env.local`)
+Create a `.env.local` file in the `infinicode-ui` directory:
+
+```env
+# Supabase (Auth & Database)
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+
+# AI API Keys (Direct or fallback)
+GEMINI_API_KEY=your_google_gemini_key
+GROQ_API_KEY=your_groq_api_key
+OPENROUTER_API_KEY=your_openrouter_key
+GITHUB_MODELS_KEY=your_github_pat_token
+```
+
+### ⚙️ Backend Configuration (`backend/src/main/resources/application.properties`)
+The backend can read keys from environment variables or be edited directly in the properties file:
+
+| Variable | Description |
+| :--- | :--- |
+| `GEMINI_API_KEY` | Primary AI provider for code analysis |
+| `GROQ_API_KEY` | Secondary high-speed AI provider |
+| `OPENROUTER_API_KEY` | DeepSeek fallback provider |
+| `JWT_SECRET` | Secret key for local JWT validation (default provided) |
+
+---
+
 ## 🛠️ Getting Started
 
 ### Prerequisites
