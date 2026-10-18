@@ -1,4 +1,4 @@
-# 🚀 InfiniCode
+# InfiniCode
 
 ### **A Production-Grade, AI-Powered Cloud IDE & Collaborative Learning Ecosystem**
 
@@ -10,7 +10,7 @@
 
 ---
 
-## 🎯 Project Overview
+## Project Overview
 
 **InfiniCode** is a full-stack Software-as-a-Service (SaaS) platform designed for the modern developer. It merges the capabilities of a **Professional Cloud IDE** (like GitHub Codespaces), a **Real-Time Collaborative Editor**, an **AI-Powered Mentor** (supporting multiple LLMs), and a **Structured Learning Center** into one elite workspace.
 
@@ -18,21 +18,21 @@ Whether you are building complex applications, learning a new tech stack from in
 
 ---
 
-## ✨ Key Features
+## Key Features
 
-### 💻 Professional Cloud IDE
+### Professional Cloud IDE
 *   **Monaco Editor Engine:** The same engine that powers VS Code, running directly in your browser.
 *   **Multi-File Management:** Create, rename, delete, and organize files within a robust project tree.
 *   **Sandboxed Execution:** Run code in **7+ languages** (Python, JS, Java, C++, Go, etc.) through our custom Java-based execution engine.
 *   **Real-Time Collaboration:** Code with teammates live via WebSocket-enabled sync.
 *   **Extension Marketplace:** Install essential developer tools like Prettier, ESLint, and TailWind CSS IntelliSense.
 
-### 🤖 Hybrid AI Intelligence
+### Hybrid AI Intelligence
 *   **AI Waterfall Router:** A self-healing routing system that switches between **Gemini 2.0 Flash**, **Groq (Llama 3.3 70B)**, and **DeepSeek R1** for zero-downtime assistance.
 *   **11 Specialized Modes:** From expert code reviews and bug fixing to security auditing and interview grading.
 *   **Context-Aware:** The AI understands your entire project file structure and current code buffer.
 
-### 🎓 Learning & Interview Ecosystem
+### Learning & Interview Ecosystem
 *   **6-Track Curriculum:** 57+ lessons covering Frontend, AI/ML, DevOps, and more.
 *   **Expert Content:** Every lesson features verified high-authority video lectures and deep-dive written material.
 *   **Mock Interview Portal:** Practice with AI-proctored challenges, complete with auto-grading and complexity analysis.
@@ -40,7 +40,7 @@ Whether you are building complex applications, learning a new tech stack from in
 
 ---
 
-## 🏗️ Technical Architecture
+## Technical Architecture
 
 InfiniCode utilizes a **Dual-Backend Architecture** for maximum performance and security:
 
@@ -61,7 +61,7 @@ User Request ➜ [1] Gemini 2.0 (Fastest)
 
 ---
 
-## 🚀 Tech Stack
+## Tech Stack
 
 | Category | Technology |
 | :-- | :-- |
@@ -72,11 +72,11 @@ User Request ➜ [1] Gemini 2.0 (Fastest)
 
 ---
 
-## 🔑 Required Configuration
+## Required Configuration
 
 To run InfiniCode locally, you must set up the following environment variables.
 
-### 🌐 Frontend Configuration (`infinicode-ui/.env.local`)
+### Frontend Configuration (`infinicode-ui/.env.local`)
 Create a `.env.local` file in the `infinicode-ui` directory:
 
 ```env
@@ -135,7 +135,7 @@ The backend can read keys from environment variables or be edited directly in th
 
 ---
 
-## 📂 Project Structure
+## Project Structure
 
 *   `backend/`: Java Spring Boot source code for AI routing and code execution.
 *   `infinicode-ui/`: Next.js frontend application.
@@ -143,7 +143,7 @@ The backend can read keys from environment variables or be edited directly in th
 
 ---
 
-## 🛡️ Security
+## Security
 
 *   **JWT Bridge:** Secure token handoff between Supabase and Spring Boot.
 *   **RLS Policies:** Database-level security ensuring users only access their own data.
